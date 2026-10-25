@@ -86,7 +86,7 @@ class ImmichGoGUI(
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Immich Go GUI")
+        self.setWindowTitle("SalcedoSync")
         self.resize(1250, 750)
         self.setMinimumSize(900, 600)
 

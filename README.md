@@ -53,7 +53,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
    right-click the app and choose **Open**, or run:
 
    ```bash
-   xattr -dr com.apple.quarantine "/Applications/Immich-Go GUI Mod.app"
+   xattr -dr com.apple.quarantine "/Applications/SalcedoSync.app"
    ```
 
 ## Run from source

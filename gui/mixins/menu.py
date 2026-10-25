@@ -68,13 +68,13 @@ class MenuMixin:
         cli_repo_action.triggered.connect(self.open_immich_go_cli_link)
         help_menu.addAction(cli_repo_action)
 
-        gui_repo_action = QAction("Immich-Go GUI GitHub", self)
+        gui_repo_action = QAction("SalcedoSync on GitHub", self)
         gui_repo_action.triggered.connect(self.open_immich_go_gui_link)
         help_menu.addAction(gui_repo_action)
 
         help_menu.addSeparator()
 
-        about_action = QAction("About Immich-Go GUI", self)
+        about_action = QAction("About SalcedoSync", self)
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
 
@@ -207,12 +207,13 @@ class MenuMixin:
     def show_about_dialog(self):
         QMessageBox.about(
             self,
-            "About Immich-Go GUI",
-            "<h3>Immich-Go GUI</h3>"
-            "<p>A modern PySide6 desktop interface for <b>immich-go</b>.</p>"
+            "About SalcedoSync",
+            "<h3>SalcedoSync</h3>"
+            "<p>Uploads photos to Immich with <b>immich-go</b>. This edition by "
+            "Andrew Salcedo, based on Immich-Go GUI by shitan198u.</p>"
             f"<p><b>Version:</b> {_gui_version()} (CLI Target: v{TESTED_IMMICH_GO_VERSION})</p>"
             "<hr/>"
-            "<p><b>Immich-Go GUI Repository:</b><br/>"
+            "<p><b>SalcedoSync Repository:</b><br/>"
             "<a href='https://github.com/Salcedoandrew/SalcedoSync'>https://github.com/Salcedoandrew/SalcedoSync</a><br/>"
             "Based on <a href='https://github.com/shitan198u/immich-go-gui'>shitan198u/immich-go-gui</a></p>"
             "<p><b>Immich-Go CLI Engine:</b><br/>"

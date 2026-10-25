@@ -48,6 +48,9 @@ Andrew's modified build. The Configuration tab is unchanged.
 - **New home: SalcedoSync.** The app's update check, About box and release
   links now point at github.com/Salcedoandrew/SalcedoSync, and the README
   describes this edition (credit to shitan198u/immich-go-gui as the original).
+- **Renamed to SalcedoSync.** The app is now SalcedoSync.app, with the new name
+  in the window title, menu bar icon and About box. Your saved server, API key
+  (Keychain), profiles and settings are kept as they are.
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 

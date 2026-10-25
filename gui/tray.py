@@ -30,7 +30,7 @@ class TrayManager:
         if self._app_icon:
             self._tray.setIcon(self._app_icon)
 
-        self._tray.setToolTip("Immich-Go GUI — Idle")
+        self._tray.setToolTip("SalcedoSync — Idle")
 
         # Context menu
         self._menu = QMenu()
@@ -39,7 +39,7 @@ class TrayManager:
         self._menu.addAction(self._status_action)
         self._menu.addSeparator()
 
-        self._open_action = QAction("Open Immich-Go GUI")
+        self._open_action = QAction("Open SalcedoSync")
         self._open_action.triggered.connect(self._show_window)
         self._menu.addAction(self._open_action)
 
@@ -150,7 +150,7 @@ class TrayManager:
     def set_status(self, text: str) -> None:
         """Update tray tooltip and status menu item."""
         self._status_action.setText(f"Status: {text}")
-        self._tray.setToolTip(f"Immich-Go GUI — {text}")
+        self._tray.setToolTip(f"SalcedoSync — {text}")
 
     def notify(
         self, title: str, message: str, icon_type: str = "info", duration_ms: int = 5000
@@ -173,7 +173,7 @@ class TrayManager:
         if self._minimize_to_tray:
             self._window.hide()
             self._tray.showMessage(
-                "Immich-Go GUI",
+                "SalcedoSync",
                 "Minimized to tray. Right-click the tray icon to quit.",
                 QSystemTrayIcon.MessageIcon.Information,
                 3000,

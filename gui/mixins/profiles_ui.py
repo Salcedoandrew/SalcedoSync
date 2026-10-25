@@ -15,7 +15,7 @@ from core.profile_manager import (
 class ProfilesUIMixin:
     def update_window_title(self):
         active = active_profile_name()
-        self.setWindowTitle(f"Immich Go GUI — {active}")
+        self.setWindowTitle(f"SalcedoSync — {active}")
 
     def _prompt_profile_switch_saves(self, active: str) -> bool:
         """Return True to continue switching, False to cancel."""

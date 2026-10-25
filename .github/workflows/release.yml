@@ -176,14 +176,14 @@ jobs:
       - name: Build macOS
         if: matrix.name == 'macos'
         run: |
-          uv run python -m nuitka --output-filename=Immich-Go-GUI \
-            --macos-app-name="Immich-Go GUI" \
-            --macos-signed-app-name="com.shitan198u.immich-go-gui" \
+          uv run python -m nuitka --output-filename=SalcedoSync \
+            --macos-app-name="SalcedoSync" \
+            --macos-signed-app-name="com.salcedo.immich-go-gui-mod" \
             --macos-app-version="$VERSION" \
             app.py
           npm install -g create-dmg@${{ env.CREATE_DMG_VERSION }}
-          create-dmg --no-code-sign "Immich-Go GUI.app" 2>/dev/null || create-dmg --no-code-sign app.app
-          mv *.dmg "Immich-Go-GUI-$VERSION-${{ steps.macos-arch.outputs.suffix }}.dmg"
+          create-dmg --no-code-sign "SalcedoSync.app" 2>/dev/null || create-dmg --no-code-sign app.app
+          mv *.dmg "SalcedoSync-$VERSION-${{ steps.macos-arch.outputs.suffix }}.dmg"
 
       - name: Build Linux Standalone
         if: matrix.name == 'linux'
