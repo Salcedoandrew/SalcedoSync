@@ -44,10 +44,19 @@ def global_profiles_path() -> Path:
     return default_config_dir() / "profiles.toml"
 
 
+def _safe_profile_name(name) -> str:
+    """Return the name if it is a valid profile name, else "default".
+
+    Names in profiles.toml are untrusted (e.g. "../x"), so they are checked
+    before ever being joined onto a path.
+    """
+    clean = sanitize_profile_name(name) if isinstance(name, str) else ""
+    return clean if _PROFILE_NAME_RE.fullmatch(clean) else "default"
+
+
 def profile_dir(name: str) -> Path:
     """Returns the directory path for a specific profile."""
-    safe_name = sanitize_profile_name(name)
-    return profiles_root() / safe_name
+    return profiles_root() / _safe_profile_name(name)
 
 
 def profile_config_path(name: str) -> Path:
@@ -272,7 +281,7 @@ def active_profile_name() -> str:
     """Returns the currently active profile name."""
     ensure_default_profile()
     idx_data = _load_profiles_index()
-    return idx_data.get("active_profile", "default")
+    return _safe_profile_name(idx_data.get("active_profile", "default"))
 
 
 def set_active_profile_name(name: str) -> None:
@@ -293,14 +302,14 @@ def list_profiles() -> list[ProfileInfo]:
     """Lists all available profiles."""
     ensure_default_profile()
     idx_data = _load_profiles_index()
-    active_name = idx_data.get("active_profile", "default")
+    active_name = _safe_profile_name(idx_data.get("active_profile", "default"))
     p_list = idx_data.get("profiles", [])
 
     results = []
     for item in p_list:
         if isinstance(item, dict):
             pname = item.get("name", "")
-            if pname:
+            if pname and _safe_profile_name(pname) == pname:
                 results.append(
                     ProfileInfo(
                         name=pname,

@@ -267,7 +267,10 @@ def load_config(path: Path | None = None, profile_name: str | None = None) -> Ap
     srv = data.get("server", {})
     cfg.server_url = srv.get("url", "")
     cfg.skip_ssl = srv.get("skip_ssl", False)
-    cfg.client_timeout_minutes = int(srv.get("client_timeout_minutes", 60))
+    try:
+        cfg.client_timeout_minutes = int(srv.get("client_timeout_minutes", 60))
+    except (TypeError, ValueError):
+        cfg.client_timeout_minutes = 60
 
     sec = data.get("secrets", {})
     cfg.secrets_provider = sec.get("provider", "keyring")

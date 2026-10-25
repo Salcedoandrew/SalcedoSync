@@ -147,6 +147,17 @@ def validate_advanced_state(tab_key: str, advanced_state: dict) -> ValidationRes
             if not text and not def_.allow_empty:
                 res.errors.append(f"{def_.label} is enabled but empty.")
 
+        elif def_.kind in ("int", "duration_minutes") and value is not None:
+            try:
+                n = int(value)
+            except (TypeError, ValueError):
+                res.errors.append(f"{def_.label} must be a whole number.")
+            else:
+                if def_.min_val is not None and n < def_.min_val:
+                    res.errors.append(f"{def_.label} must be at least {def_.min_val}.")
+                if def_.max_val is not None and n > def_.max_val:
+                    res.errors.append(f"{def_.label} must be at most {def_.max_val}.")
+
         if def_.key == "on-errors":
             v = str(value or "").strip().lower()
             if (
