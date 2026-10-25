@@ -66,7 +66,8 @@ def test_files_recurses_symlinked_dir(tmp_path):
     files, skipped = _files(src)
     # The target is already walked under its real name, so the link adds
     # no second copy: the photo appears once, as sub/photo.jpg.
-    assert [str(p.relative_to(src)) for p in files] == [
+    # as_posix() so the comparison holds on Windows (backslash separator).
+    assert [p.relative_to(src).as_posix() for p in files] == [
         "a.jpg",
         "sub/photo.jpg",
     ]

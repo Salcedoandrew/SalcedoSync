@@ -202,30 +202,33 @@ def _files(src: Path) -> tuple[list[Path], list[str]]:
 class _OutputCounter:
     """Counts files under a growing output dir without re-walking it.
 
-    Remembers each directory's mtime, direct file count and subdir list.
-    A directory's own mtime only changes when its direct entries change,
-    so an unchanged directory is never re-listed: each tick stats every
-    directory (there are few) and re-reads only the changed ones. New
-    files are never missed, because creating a file always bumps its
-    parent directory's mtime.
+    Remembers each directory's mtime and size, direct file count and
+    subdir list. A directory's own mtime only changes when its direct
+    entries change, so an unchanged directory is never re-listed: each
+    tick stats every directory (there are few) and re-reads only the
+    changed ones. The size is checked too, because some filesystems
+    report mtime at a coarse granularity and a file added within the
+    same tick would otherwise be missed.
     """
 
     def __init__(self, root: Path):
         self._root = root
-        # dir -> (mtime_ns, direct file count, subdirs, total below dir)
-        self._cache: dict[Path, tuple[int, int, tuple[Path, ...], int]] = {}
+        # dir -> (mtime_ns, size, direct file count, subdirs, total below dir)
+        self._cache: dict[Path, tuple[int, int, int, tuple[Path, ...], int]] = {}
 
     def count(self) -> int:
         return self._count_dir(self._root)
 
     def _count_dir(self, d: Path) -> int:
         try:
-            mtime = d.stat().st_mtime_ns
+            st = d.stat()
+            mtime = st.st_mtime_ns
+            size = st.st_size
         except OSError:
             return 0
         cached = self._cache.get(d)
-        if cached is not None and cached[0] == mtime:
-            _, n_files, subdirs, _ = cached
+        if cached is not None and cached[0] == mtime and cached[1] == size:
+            _, _, n_files, subdirs, _ = cached
         else:
             n_files = 0
             subdirs: list[Path] = []
@@ -237,10 +240,10 @@ class _OutputCounter:
                         elif e.is_file(follow_symlinks=False):
                             n_files += 1
             except OSError:
-                return cached[3] if cached is not None else 0
+                return cached[4] if cached is not None else 0
             subdirs = sorted(subdirs)
         total = n_files + sum(self._count_dir(s) for s in subdirs)
-        self._cache[d] = (mtime, n_files, tuple(subdirs), total)
+        self._cache[d] = (mtime, size, n_files, tuple(subdirs), total)
         return total
 
 
