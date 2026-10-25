@@ -48,24 +48,34 @@ class ConfirmDialogMixin:
         if plan.tab_key in SERVER_REQUIRED_TABS:
             config_state = self._collect_config_state()
             tab_state = self._collect_tab_state(plan.tab_key)
-            conn_res = check_preflight_server_connection(
-                plan.tab_key, config_state, tab_state, timeout=3.0
+            # Check the server off the UI thread; the run continues in
+            # _after_preflight. A newer Run click supersedes this one.
+            self._run_net(
+                "preflight",
+                lambda: check_preflight_server_connection(
+                    plan.tab_key, config_state, tab_state, timeout=3.0
+                ),
+                lambda conn_res: self._after_preflight(plan, conn_res),
             )
-            if not conn_res.ok:
-                reply = QMessageBox.warning(
-                    self,
-                    "Server Unreachable",
-                    f"Immich server connection check failed:\n\n{conn_res.message}\n\n"
-                    f"Running immich-go will likely fail because the server cannot be reached.\n\n"
-                    f"Do you want to proceed anyway?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
-                )
-                if reply != QMessageBox.StandardButton.Yes:
-                    return
-                plan.warnings.insert(
-                    0, f"Server pre-flight check failed: {conn_res.message}"
-                )
+            return
 
         # No confirmation dialog: start immediately (progress shows in-app).
+        self.run_command(plan)
+
+    def _after_preflight(self, plan, conn_res):
+        if not conn_res.ok:
+            reply = QMessageBox.warning(
+                self,
+                "Server Unreachable",
+                f"Immich server connection check failed:\n\n{conn_res.message}\n\n"
+                f"Running immich-go will likely fail because the server cannot be reached.\n\n"
+                f"Do you want to proceed anyway?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            plan.warnings.insert(
+                0, f"Server pre-flight check failed: {conn_res.message}"
+            )
         self.run_command(plan)

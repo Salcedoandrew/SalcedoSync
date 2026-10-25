@@ -76,7 +76,7 @@ def test_check_preflight_server_connection_unreachable():
         assert "Failed to connect to server" in res.message
 
 
-def test_status_card_reflects_connection_test_failure(gui):
+def test_status_card_reflects_connection_test_failure(gui, qtbot):
     gui.stacked_widget.setCurrentIndex(0)
     gui.inputs["config"]["server"].setText("http://localhost:2283")
     gui.inputs["config"]["api_key"].setText("key")
@@ -86,7 +86,8 @@ def test_status_card_reflects_connection_test_failure(gui):
         patch("PySide6.QtWidgets.QMessageBox.warning"),
     ):
         gui.on_test_connection_clicked()
-        assert gui._last_conn_test_ok is False
+        # The test runs on a worker thread; the result arrives by signal.
+        qtbot.waitUntil(lambda: gui._last_conn_test_ok is False, timeout=3000)
         assert "Connection Failed" in gui.status_card.txt_s.text()
 
 

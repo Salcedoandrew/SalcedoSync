@@ -61,6 +61,7 @@ class StatusMixin:
 
     def _reset_conn_test_state(self):
         self._last_conn_test_ok = None
+        self._drop_pending_net("auto")  # an in-flight test is for the old text
         self._schedule_status_update()
 
     def _schedule_status_update(self):
