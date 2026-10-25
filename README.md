@@ -1,143 +1,87 @@
-# Immich-Go GUI
+# SalcedoSync
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![immich-go](https://img.shields.io/badge/immich--go-0.32.0%20tested-blueviolet.svg)](https://github.com/simulot/immich-go)
-[![Docs Website](https://img.shields.io/badge/docs-website-e9533f.svg)](https://shitan198u.github.io/immich-go-gui/)
 
-A cross-platform desktop front-end for [immich-go](https://github.com/simulot/immich-go) — configure workflows with forms, preview the exact command, and launch it in a real terminal against your [Immich](https://immich.app/) server.
+A macOS app that uploads photos to your [Immich](https://immich.app/) server, with
+album choices, optional built-in compression and in-app progress. It drives
+[immich-go](https://github.com/simulot/immich-go) under the hood.
 
-📖 **Live Documentation Website**: [https://shitan198u.github.io/immich-go-gui/](https://shitan198u.github.io/immich-go-gui/)
+This edition is by Andrew Salcedo. It is based on
+[shitan198u/immich-go-gui](https://github.com/shitan198u/immich-go-gui), the
+original Immich-Go GUI by shitan198u. Full credit for the original app, its
+design and its documentation goes to that project.
 
-![Immich-Go GUI Demonstration](immich-demo.gif)
+## What's different in this edition
 
+- **Album choices inline.** Upload > From Folder asks one question, "Where should
+  these go in Immich?": just upload, add to an existing album, create a new
+  album, or make albums from folder names (the same four choices as Immich Upload).
+- **Server album dropdown.** Existing albums are loaded from your Immich server,
+  searchable, with a Refresh button.
+- **No Dry Run button and no confirm dialog.** Run Command starts right away.
+- **Uploads run inside the app.** No Terminal window. A progress panel shows
+  each stage, counts for uploaded, already in Immich, skipped and errors, and a
+  Cancel button that stops immich-go cleanly.
+- **Compression tick box, matching Immich Upload.** Optional; JPEG/PNG/WebP/GIF
+  photos are compressed with caesiumclt at quality 80 into a temp copy, keeping
+  EXIF/GPS and file dates. Originals are never changed and the temp copy is
+  deleted afterwards.
+- **Album list loads over https first** for plain http domain addresses (fast
+  behind proxies such as Cloudflare), with plain-English errors.
+- **Security and reliability fixes from a code audit:**
+  1. The API key is never forwarded when a server redirects.
+  2. No fallback to unencrypted http after an https/TLS failure.
+  3. Connection tests and the pre-run server check run in the background, so
+     the window never freezes.
+  4. A bare web address such as `photos.example.com` means https (local names
+     and IP addresses still use http).
+  5. Bad numbers in settings or advanced options show a clear error or fall
+     back to the default instead of crashing a run.
+  6. Profile names from `profiles.toml` are validated before being used as
+     folder paths.
 
+See [CHANGELOG.md](CHANGELOG.md) for details.
 
+## Install (macOS, Apple silicon)
 
-## Why this exists
+1. Download the DMG from
+   [Releases](https://github.com/Salcedoandrew/SalcedoSync/releases/latest).
+2. Open it and drag the app to **Applications**.
+3. The app is not signed by Apple, so macOS blocks the first launch. Either
+   right-click the app and choose **Open**, or run:
 
-immich-go is powerful but flag-heavy. Immich-Go GUI gives you:
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Immich-Go GUI Mod.app"
+   ```
 
-- **11 workflow tabs** covering every current immich-go upload / archive / stack subcommand
-- **Safe defaults** — API keys in the OS keyring, secrets via environment variables, masked previews
-- **Profiles** for home vs work (or staging vs production) Immich servers
-- **Pre-flight checks** so you discover connection problems before a long job starts
-- **Automatic immich-go downloads** with SHA256 verification
-
-New here? Start with **[docs/](docs/README.md)** — especially [Choose Your Workflow](docs/user-guide/choose-your-workflow.md) and [Getting Started](docs/user-guide/getting-started.md).
-
-## Features
-
-| Area | Highlights |
-|------|------------|
-| **Workflows** | Upload & archive from folder, Google Photos, iCloud, Picasa, Immich; plus Stack |
-| **Config** | Multi-profile settings, themes (system/light/dark), preferred terminal |
-| **Safety** | Keyring secrets, env delivery, SSL warnings, process locks, dry-run |
-| **CLI parity** | Simple mode for common fields; advanced mode for full flag surface |
-| **Ops** | Binary manager, connection test, command preview, drag-and-drop paths |
-| **Platforms** | Windows installer/portable, macOS DMG, Linux AppImage/DEB/RPM/tarball |
-
-## Architecture Overview
-
-```mermaid
-flowchart LR
-    classDef userStyle fill:#6366f1,stroke:#4338ca,color:#fff,stroke-width:2px
-    classDef guiStyle fill:#0ea5e9,stroke:#0369a1,color:#fff,stroke-width:2px
-    classDef cliStyle fill:#8b5cf6,stroke:#6d28d9,color:#fff,stroke-width:2px
-    classDef serverStyle fill:#10b981,stroke:#047857,color:#fff,stroke-width:2px
-
-    User([👤 You]):::userStyle
-    GUI[🖥️ Immich-Go GUI]:::guiStyle
-    CLI[⚙️ immich-go CLI]:::cliStyle
-    Server[(☁️ Immich Server)]:::serverStyle
-
-    User -->|configure & launch| GUI
-    GUI -->|argv + env secrets| CLI
-    CLI -->|upload / archive / stack| Server
-```
-
-## Download & Installation
-
-### 📥 Download — Releases Page (recommended)
-
-**[⬇️ Download the latest release →](https://github.com/shitan198u/immich-go-gui/releases/latest)**
-
-Pre-built desktop apps are available for all platforms — no Python or dependencies required:
-
-| Platform | Package |
-|----------|---------|
-| 🪟 Windows | `Immich-Go-GUI-{VERSION}-Windows-x86_64-Setup.exe` (or Portable `.zip`) |
-| 🍎 macOS | `Immich-Go-GUI-{VERSION}-macOS-x86_64.dmg` |
-| 🐧 Linux | `Immich-Go-GUI-{VERSION}-Linux-x86_64.AppImage` · `.deb` · `.rpm` · `.tar.gz` |
-
-> **Windows antivirus note:** Defender or VirusTotal may flag the unsigned Nuitka build (`Trojan:Win32/Wacatac.B!ml`). This is a common **false positive**. Always download from [official GitHub Releases](https://github.com/shitan198u/immich-go-gui/releases/latest).
-
-See **[Platform Notes](docs/user-guide/platform-notes.md)** for Gatekeeper, AppImage `chmod +x`, and other OS-specific tips.
-
-### 💻 Run from source
-
-For contributors or users who prefer source:
-
-**Prerequisites:** Python **3.13** and [uv](https://docs.astral.sh/uv/getting-started/installation/).
+## Run from source
 
 ```bash
-git clone https://github.com/shitan198u/immich-go-gui.git
-cd immich-go-gui
+git clone https://github.com/Salcedoandrew/SalcedoSync.git
+cd SalcedoSync
 uv sync --dev
-uv run app.py
-```
-
-On first use, the Config tab can download a compatible immich-go binary for you.
-
-## Documentation
-
-🌐 **Live Documentation Website**: [https://shitan198u.github.io/immich-go-gui/](https://shitan198u.github.io/immich-go-gui/)
-
-Full guides live under **[docs/](docs/README.md)**:
-
-| Audience | Start here |
-|----------|------------|
-| **Users** | [Getting Started](docs/user-guide/getting-started.md) · [Choose Your Workflow](docs/user-guide/choose-your-workflow.md) · [FAQ](docs/user-guide/faq.md) |
-| **Operators** | [Configuration](docs/user-guide/configuration.md) · [Security](docs/user-guide/security-and-privacy.md) · [Troubleshooting](docs/user-guide/troubleshooting.md) |
-| **Developers** | [Architecture](docs/developer-guide/architecture.md) · [Testing](docs/developer-guide/testing.md) · [CONTRIBUTING](CONTRIBUTING.md) |
-| **Reference** | [CLI mapping](docs/reference/cli-command-mapping.md) · [Config schema](docs/reference/config-schema.md) · [Env vars](docs/reference/environment-variables.md) |
-
-Version history: [CHANGELOG.md](CHANGELOG.md).
-
-## Immich-Go Integration
-
-This GUI targets immich-go **0.32.0** (tested). CLI behavior, edge cases, and flag semantics are defined upstream:
-
-https://github.com/simulot/immich-go/
-
-Compatibility policy: [docs/reference/immich-go-compatibility.md](docs/reference/immich-go-compatibility.md).
-
-## Contributing
-
-Contributions are welcome. Please:
-
-1. Read [CONTRIBUTING.md](CONTRIBUTING.md)
-2. Skim the [Developer Guide](docs/developer-guide/architecture.md)
-3. Open PRs against **`master`**
-4. Prefer [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …) so Release Please can version cleanly
-
-```bash
-uv sync --dev
+uv run python app.py
 uv run pytest
 ```
 
-## Support
+## Documentation
 
-If Immich-Go GUI saves you time, you can support development:
+The original project's documentation still applies to everything outside the
+changes above: [shitan198u.github.io/immich-go-gui](https://shitan198u.github.io/immich-go-gui/).
 
-### GitHub Sponsors
+## How this was made
 
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-red?style=for-the-badge&logo=github)](https://github.com/sponsors/shitan198u)
+This edition was written with help from AI coding assistants, and directed and
+tested by Andrew Salcedo.
 
-### Buy Me a Coffee
+## Support the original author
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%F0%9F%8D%BA-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/shivashitan)
+If Immich-Go GUI saves you time, consider supporting shitan198u:
+[GitHub Sponsors](https://github.com/sponsors/shitan198u) ·
+[Buy Me a Coffee](https://www.buymeacoffee.com/shivashitan)
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.txt).
+[MIT License](LICENSE.txt), as in the original project.

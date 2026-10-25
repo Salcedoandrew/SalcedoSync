@@ -45,6 +45,9 @@ Andrew's modified build. The Configuration tab is unchanged.
   bad number in a settings file or an advanced option now shows a clear error
   or falls back to the default, and an invalid profile name in profiles.toml
   is ignored instead of being used as a folder path.
+- **New home: SalcedoSync.** The app's update check, About box and release
+  links now point at github.com/Salcedoandrew/SalcedoSync, and the README
+  describes this edition (credit to shitan198u/immich-go-gui as the original).
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 

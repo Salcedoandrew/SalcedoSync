@@ -213,7 +213,8 @@ class MenuMixin:
             f"<p><b>Version:</b> {_gui_version()} (CLI Target: v{TESTED_IMMICH_GO_VERSION})</p>"
             "<hr/>"
             "<p><b>Immich-Go GUI Repository:</b><br/>"
-            "<a href='https://github.com/shitan198u/immich-go-gui'>https://github.com/shitan198u/immich-go-gui</a></p>"
+            "<a href='https://github.com/Salcedoandrew/SalcedoSync'>https://github.com/Salcedoandrew/SalcedoSync</a><br/>"
+            "Based on <a href='https://github.com/shitan198u/immich-go-gui'>shitan198u/immich-go-gui</a></p>"
             "<p><b>Immich-Go CLI Engine:</b><br/>"
             "<a href='https://github.com/simulot/immich-go'>https://github.com/simulot/immich-go</a></p>",
         )
@@ -222,7 +223,7 @@ class MenuMixin:
         webbrowser.open("https://github.com/simulot/immich-go")
 
     def open_immich_go_gui_link(self):
-        webbrowser.open("https://github.com/shitan198u/immich-go-gui")
+        webbrowser.open("https://github.com/Salcedoandrew/SalcedoSync")
 
     def _confirm_reset_advanced_flags(self):
         reply = QMessageBox.question(

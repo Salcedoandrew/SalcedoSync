@@ -45,7 +45,7 @@ def is_parseable_semver(version: str) -> bool:
     return True
 
 
-GITHUB_REPO = "shitan198u/immich-go-gui"
+GITHUB_REPO = "Salcedoandrew/SalcedoSync"
 LATEST_RELEASE_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 

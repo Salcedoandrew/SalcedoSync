@@ -16,6 +16,11 @@ dependencies = [
     "watchdog>=6.0.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Salcedoandrew/SalcedoSync"
+Issues = "https://github.com/Salcedoandrew/SalcedoSync/issues"
+Upstream = "https://github.com/shitan198u/immich-go-gui"
+
 [dependency-groups]
 dev = [
     "cairosvg>=2.7.1",

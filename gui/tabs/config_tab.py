@@ -143,8 +143,8 @@ def build_config_tab(host) -> QWidget:
     releases_hint = QLabel("Downloads from GitHub Releases.")
     releases_hint.setObjectName("Hint")
     releases_link = QLabel(
-        "<a href='https://github.com/shitan198u/immich-go-gui/releases'>"
-        "github.com/shitan198u/immich-go-gui/releases</a>"
+        "<a href='https://github.com/Salcedoandrew/SalcedoSync/releases'>"
+        "github.com/Salcedoandrew/SalcedoSync/releases</a>"
     )
     releases_link.setObjectName("Hint")
     releases_link.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
