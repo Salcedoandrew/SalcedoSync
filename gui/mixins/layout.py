@@ -207,7 +207,7 @@ class LayoutMixin:
         header_layout.setContentsMargins(24, 0, 24, 0)
 
         title_box = QVBoxLayout()
-        self.lbl_app_name = QLabel("Immich Go GUI")
+        self.lbl_app_name = QLabel("SalcedoSync")
         self.lbl_app_name.setObjectName("AppName")
         self.lbl_crumb = QLabel("configuration")
         self.lbl_crumb.setObjectName("Crumb")
