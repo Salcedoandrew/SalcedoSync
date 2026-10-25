@@ -124,9 +124,9 @@ jobs:
         run: |
           ARCH=$(uname -m)
           if [[ "$ARCH" == "arm64" ]]; then
-            echo "suffix=macOS-arm64" >> $GITHUB_OUTPUT
+            echo "suffix=arm64" >> $GITHUB_OUTPUT
           else
-            echo "suffix=macOS-x86_64" >> $GITHUB_OUTPUT
+            echo "suffix=x86_64" >> $GITHUB_OUTPUT
           fi
 
       - name: Inject build version into source
@@ -291,15 +291,23 @@ jobs:
         run: |
           SUMS_FILE="Immich-Go-GUI-$VERSION-${{ matrix.name }}-SHA256SUMS.txt"
           : > "$SUMS_FILE"
-          for f in Immich-Go-GUI-$VERSION-*; do
+          # Both globs: Linux/Windows artifacts are Immich-Go-GUI-*; the macOS
+          # DMG is SalcedoSync-* (the macOS job builds it under that name).
+          for f in Immich-Go-GUI-$VERSION-* SalcedoSync-$VERSION-*; do
             if [ -f "$f" ] && [ "$f" != "$SUMS_FILE" ]; then
               sha256sum "$f" >> "$SUMS_FILE"
             fi
           done
+          # Never upload an empty sums file: gh release upload rejects 0-byte
+          # assets with HTTP 400, which failed the macOS job on v1.5.0-mod.
+          if [ ! -s "$SUMS_FILE" ]; then rm -f "$SUMS_FILE"; fi
 
       # Upload this platform's assets to the GitHub Release using GitHub CLI —
       # gh release upload directly uploads matching platform files with --clobber,
       # avoiding softprops API race condition HttpErrors on concurrent matrix jobs.
+      # The assets list covers both names: Immich-Go-GUI-* (Linux/Windows) and
+      # SalcedoSync-* (the macOS DMG). A glob that matches nothing is skipped
+      # via the -f test so the other platforms' uploads keep working.
       - name: Publish assets to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -307,9 +315,11 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
-          gh release upload "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --clobber 2>/dev/null || \
-          (gh release create "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --title "$RELEASE_TAG" 2>/dev/null || true; \
-           gh release upload "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --clobber)
+          assets=(Immich-Go-GUI-$VERSION-*)
+          for f in SalcedoSync-$VERSION-*; do [ -f "$f" ] && assets+=("$f"); done
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber 2>/dev/null || \
+          (gh release create "$RELEASE_TAG" "${assets[@]}" --title "$RELEASE_TAG" 2>/dev/null || true; \
+           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber)
 
       - name: Publish assets to Test Pre-Release
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -318,6 +328,8 @@ jobs:
           RELEASE_TAG: test-${{ steps.set-version.outputs.version }}
         shell: bash
         run: |
-          gh release upload "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --clobber 2>/dev/null || \
-          (gh release create "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --title "Test Build $RELEASE_TAG" --target "${{ github.sha }}" --prerelease 2>/dev/null || true; \
-           gh release upload "$RELEASE_TAG" Immich-Go-GUI-$VERSION-* --clobber)
+          assets=(Immich-Go-GUI-$VERSION-*)
+          for f in SalcedoSync-$VERSION-*; do [ -f "$f" ] && assets+=("$f"); done
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber 2>/dev/null || \
+          (gh release create "$RELEASE_TAG" "${assets[@]}" --title "Test Build $RELEASE_TAG" --target "${{ github.sha }}" --prerelease 2>/dev/null || true; \
+           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber)
