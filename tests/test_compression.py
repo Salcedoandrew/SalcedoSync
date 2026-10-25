@@ -173,6 +173,6 @@ def test_output_counter_incremental(tmp_path):
     (out / "sub2").mkdir()
     (out / "sub2" / "e.jpg").write_bytes(b"x")
     assert counter.count() == full_count() == 5
-    # Unchanged tree: repeated counts stay correct without re-walking.
+    # Unchanged tree: repeated counts stay correct.
     assert counter.count() == 5
     assert counter.count() == full_count()
