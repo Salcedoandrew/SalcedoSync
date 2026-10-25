@@ -28,6 +28,7 @@ from gui.widgets import (
     StatusCard,
     SwitchButton,
 )
+from gui.widgets.run_panel import RunPanel
 
 _UPLOAD_TAB_KEYS = (
     "upload-folder",
@@ -101,7 +102,14 @@ class LayoutMixin:
         self.upload_tabs.addTab(self.upload_picasa_tab, "Picasa")
         self.upload_tabs.addTab(self.upload_immich_tab, "From Immich")
 
-        page.addWidget(self.upload_tabs)
+        # Upload options on the left, in-app run progress in the lower right.
+        self.run_panel = RunPanel()
+        self.run_panel.finished.connect(self._on_background_finished)
+        row = QHBoxLayout()
+        row.setSpacing(24)
+        row.addWidget(self.upload_tabs, 1)
+        row.addWidget(self.run_panel, 0, Qt.AlignmentFlag.AlignBottom)
+        page.layout.addLayout(row)
         self.upload_tabs.currentChanged.connect(self._on_upload_tab_changed)
         self._on_upload_tab_changed(self.upload_tabs.currentIndex())
         return page
@@ -235,20 +243,13 @@ class LayoutMixin:
         footer_layout.setContentsMargins(24, 0, 24, 0)
 
         self.lbl_running_warning = QLabel(
-            "\u26a0\ufe0f Immich-Go is currently running in a terminal. "
-            "Close the terminal to run another command."
+            "\u26a0\ufe0f Immich-Go is running. Wait for it to finish or cancel it."
         )
         self.lbl_running_warning.setObjectName("RunningWarning")
         self.lbl_running_warning.setStyleSheet("color: #EAB308; font-weight: 500;")
         self.lbl_running_warning.setVisible(False)
         footer_layout.addWidget(self.lbl_running_warning)
         footer_layout.addStretch()
-
-        self.btn_dry_run = QPushButton("Preview (Dry Run)")
-        self.btn_dry_run.setObjectName("BtnPreview")
-        self.btn_dry_run.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_dry_run.clicked.connect(lambda: self.show_confirm_dialog(True))
-        footer_layout.addWidget(self.btn_dry_run)
 
         self.btn_run = QPushButton("Run Command")
         self.btn_run.setObjectName("BtnRun")

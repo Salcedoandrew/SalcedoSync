@@ -1,10 +1,13 @@
 import os
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 from PySide6.QtWidgets import QMessageBox
 
 from core import (
+    TAB_COMMANDS,
     CommandPlan,
     build_plan_from_state,
     create_lock,
@@ -71,6 +74,10 @@ class ExecutionMixin:
 
         plan.binary_path = binary_path
 
+        if plan.tab_key.startswith("upload-"):
+            self._run_in_background(plan)
+            return
+
         if hasattr(self, "log"):
             self.log.info(
                 "Launching: tab=%s argv=%s env_keys=%s",
@@ -103,13 +110,34 @@ class ExecutionMixin:
             release_lock(lock_path)
             QMessageBox.critical(self, "Error Launching Terminal", res.message)
             self.btn_run.setEnabled(True)
-            self.btn_dry_run.setEnabled(True)
             return
 
         self.active_lock_paths = {lock_path}
         self.active_lock_path = lock_path
         self.running_process = True
         self.btn_run.setEnabled(False)
-        self.btn_dry_run.setEnabled(False)
         self._start_process_timer()
+        self.update_status()
+
+    def _run_in_background(self, plan: CommandPlan):
+        """Run immich-go as a child process; progress shows in self.run_panel."""
+        log_dir = Path(tempfile.gettempdir()) / "immich-go-gui-logs"
+        log_dir.mkdir(exist_ok=True)
+        log_path = log_dir / f"upload_{time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
+        # --no-ui gives a plain progress line; --log-file gives per-file events.
+        # Both must precede the positional path argument.
+        n = len(TAB_COMMANDS.get(plan.tab_key, ()))
+        argv = [a for a in plan.argv if a != "--no-ui"]
+        argv[n:n] = ["--no-ui", "--log-file", str(log_path)]
+        if hasattr(self, "log"):
+            self.log.info(
+                "Background run: tab=%s argv=%s", plan.tab_key, plan.display_argv
+            )
+        self.running_process = True
+        self.btn_run.setEnabled(False)
+        self.run_panel.start(plan.binary_path, argv, plan.env, log_path)
+        self.update_status()
+
+    def _on_background_finished(self, ok: bool):
+        self.running_process = False
         self.update_status()

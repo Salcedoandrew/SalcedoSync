@@ -74,8 +74,10 @@ class StatusMixin:
         active_paths = getattr(self, "active_lock_paths", set())
         if not active_paths and getattr(self, "active_lock_path", None):
             active_paths = {self.active_lock_path}
-        is_running = any(is_lock_active(p) for p in active_paths) or (
-            getattr(self, "running_process", False) is True
+        is_running = (
+            any(is_lock_active(p) for p in active_paths)
+            or getattr(self, "running_process", False) is True
+            or (hasattr(self, "run_panel") and self.run_panel.is_running())
         )
         validation = self.validate_inputs_light()
         active_tab = self._get_active_tab_key()
@@ -84,7 +86,6 @@ class StatusMixin:
         if is_running:
             self.lbl_running_warning.setVisible(True)
             self.btn_run.setEnabled(False)
-            self.btn_dry_run.setEnabled(False)
         else:
             self.lbl_running_warning.setVisible(False)
 
@@ -94,7 +95,6 @@ class StatusMixin:
             self.status_card.set_server("err", "Server: Connection Failed")
             if not is_running and active_tab in SERVER_REQUIRED_TABS:
                 self.btn_run.setEnabled(False)
-                self.btn_dry_run.setEnabled(False)
         elif last_test is True and active_tab == "config":
             self.status_card.set_server("ok", "Server: Connected")
         elif active_tab == "config":
@@ -110,12 +110,10 @@ class StatusMixin:
             self.status_card.set_server("warn", validation.warnings[0])
             if not is_running:
                 self.btn_run.setEnabled(True)
-                self.btn_dry_run.setEnabled(True)
         elif validation.is_valid:
             self.status_card.set_server("ok", "Server: Ready")
             if not is_running:
                 self.btn_run.setEnabled(True)
-                self.btn_dry_run.setEnabled(True)
         else:
             first_error = (
                 validation.errors[0] if validation.errors else "Server: Not Set"
@@ -123,7 +121,6 @@ class StatusMixin:
             self.status_card.set_server("err", f"Server: {first_error}")
             if not is_running:
                 self.btn_run.setEnabled(False)
-                self.btn_dry_run.setEnabled(False)
 
         srv_edit = self.inputs.get("config", {}).get("server")
         srv = normalize_server_url(srv_edit.text()) if srv_edit else ""

@@ -5,6 +5,24 @@ All notable changes to the Immich-Go GUI project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.4-mod (2026-10-23)
+
+Andrew's modified build. The Configuration tab is unchanged.
+
+- **Simpler upload options.** On Upload > From Folder, the old Options section
+  is replaced by one question, "Where should these go in Immich?", with the same
+  four choices as Immich Upload: just upload (no album), add to an existing
+  album, create a new album, or make albums from folder names.
+- **Pick an existing album from a list.** The album list comes straight from
+  your Immich server and you can type to search it. Refresh reloads it.
+- **One button.** "Preview (Dry Run)" is gone, and so is the "Confirm Execution"
+  window. Run Command starts the upload right away.
+- **Uploads run inside the app.** No Terminal window opens. The Upload Progress
+  panel in the lower right shows two progress bars (checking what's already in
+  Immich, then files processed), counts for discovered, uploaded, already in
+  Immich, skipped and errors, a Cancel button, and a clear done or error message.
+  Cancel stops immich-go the same way Ctrl+C does, so it finishes cleanly.
+
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 
 

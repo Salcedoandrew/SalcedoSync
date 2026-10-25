@@ -1,10 +1,16 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QLineEdit,
+    QMessageBox,
     QPlainTextEdit,
     QSpinBox,
 )
+
+from core.album_choice import album_flags_state, fetch_album_names
+from core.network import normalize_server_url
 
 
 class FormStateMixin:
@@ -126,6 +132,40 @@ class FormStateMixin:
             else 60,
         }
 
+    def refresh_album_list(self):
+        """Load album names from the configured Immich server into the dropdown."""
+        combo = getattr(self, "album_existing_combo", None)
+        if combo is None:
+            return
+        cfg = self._collect_config_state()
+        server = normalize_server_url(cfg.get("server", ""))
+        if not server or not cfg.get("api_key"):
+            QMessageBox.warning(
+                self,
+                "Albums",
+                "Set the server URL and API key in the Configuration tab first.",
+            )
+            return
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            names = fetch_album_names(server, cfg["api_key"], not cfg.get("skip-ssl"))
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.warning(
+                self,
+                "Albums",
+                f"Couldn't load your albums:\n{type(e).__name__}: {str(e)[:200]}",
+            )
+            return
+        QApplication.restoreOverrideCursor()
+        current = combo.currentText()
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItems(names)
+        combo.setCurrentText(current if current in names else "")
+        combo.blockSignals(False)
+        self._schedule_status_update()
+
     def _collect_tab_state(self, tab_key: str) -> dict:
         return self._raw_tab_state(tab_key)
 
@@ -169,14 +209,18 @@ class FormStateMixin:
             return default
 
         if tab_key == "upload-folder":
-            return {
+            state = {
                 "path": get_text("path"),
-                "folder-album": get_combo("folder-album", "NONE"),
-                "into-album": get_text("into-album"),
-                "manage-burst": get_combo("manage-burst", "NoStack"),
-                "manage-raw-jpeg": get_combo("manage-raw-jpeg", "NoStack"),
-                "manage-heic-jpeg": get_combo("manage-heic-jpeg", "NoStack"),
+                "album-mode": get_combo("album-mode"),
+                "album-existing": get_combo("album-existing"),
+                "album-new": get_text("album-new"),
             }
+            state.update(
+                album_flags_state(
+                    state["album-mode"], state["album-existing"], state["album-new"]
+                )
+            )
+            return state
 
         elif tab_key == "upload-gp":
             return {

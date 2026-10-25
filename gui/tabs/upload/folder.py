@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QCompleter,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
@@ -8,6 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.album_choice import ALBUM_MODES
 from gui.widgets import Card, DroppableLineEdit, FormSection
 
 
@@ -60,35 +62,52 @@ def build_upload_folder_tab(host) -> QWidget:
     card.layout.addLayout(form)
     lay.addWidget(card)
 
-    card = Card("Options")
+    # "Where should these go in Immich?" (same 4 choices as Immich Upload)
+    card = Card("Where should these go in Immich?")
     form = FormSection()
 
-    c_album = QComboBox()
-    c_album.addItems(["NONE", "FOLDER", "PATH"])
-    host.inputs["upload-folder"]["folder-album"] = c_album
-    form.add_row("Album Organization", c_album)
+    c_mode = QComboBox()
+    c_mode.addItems(list(ALBUM_MODES))
+    host.inputs["upload-folder"]["album-mode"] = c_mode
+    form.add_row("Destination", c_mode)
 
-    t_album = QLineEdit()
-    t_album.setPlaceholderText("e.g. Family Archive")
-    host.inputs["upload-folder"]["into-album"] = t_album
-    form.add_row("Put all into Album", t_album)
+    c_existing = QComboBox()
+    c_existing.setEditable(True)
+    c_existing.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+    c_existing.lineEdit().setPlaceholderText("Type to search your albums")
+    completer = c_existing.completer()
+    completer.setFilterMode(Qt.MatchFlag.MatchContains)
+    completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+    host.inputs["upload-folder"]["album-existing"] = c_existing
+    host.album_existing_combo = c_existing
+    btn_refresh = QPushButton("Refresh")
+    btn_refresh.setCursor(Qt.CursorShape.PointingHandCursor)
+    btn_refresh.clicked.connect(host.refresh_album_list)
+    existing_box = QWidget()
+    existing_row = QHBoxLayout(existing_box)
+    existing_row.setContentsMargins(0, 0, 0, 0)
+    existing_row.addWidget(c_existing, 1)
+    existing_row.addWidget(btn_refresh)
+    form.add_row("Album", existing_box)
 
-    c_burst = QComboBox()
-    c_burst.addItems(["NoStack", "Stack", "StackKeepRaw", "StackKeepJPEG"])
-    host.inputs["upload-folder"]["manage-burst"] = c_burst
-    form.add_row("Burst Photos", c_burst)
+    t_new = QLineEdit()
+    t_new.setPlaceholderText("e.g. Family Trip 2026")
+    host.inputs["upload-folder"]["album-new"] = t_new
+    form.add_row("New album name", t_new)
 
-    c_raw = QComboBox()
-    c_raw.addItems(["NoStack", "KeepRaw", "KeepJPG", "StackCoverRaw", "StackCoverJPG"])
-    host.inputs["upload-folder"]["manage-raw-jpeg"] = c_raw
-    form.add_row("RAW + JPEG Pairs", c_raw)
+    def on_mode_changed(text: str):
+        mode = ALBUM_MODES.get(text, "none")
+        form.setRowVisible(existing_box, mode == "existing")
+        form.setRowVisible(t_new, mode == "new")
+        if mode == "existing" and c_existing.count() == 0:
+            host.refresh_album_list()
+        host._schedule_status_update()
 
-    c_heic = QComboBox()
-    c_heic.addItems(
-        ["NoStack", "KeepHeic", "KeepJPG", "StackCoverHeic", "StackCoverJPG"]
-    )
-    host.inputs["upload-folder"]["manage-heic-jpeg"] = c_heic
-    form.add_row("HEIC + JPEG Pairs", c_heic)
+    c_mode.currentTextChanged.connect(on_mode_changed)
+    c_existing.currentTextChanged.connect(lambda _t: host._schedule_status_update())
+    t_new.textChanged.connect(lambda _t: host._schedule_status_update())
+    host._on_album_mode_changed = on_mode_changed
+    on_mode_changed(c_mode.currentText())
 
     card.layout.addLayout(form)
     lay.addWidget(card)

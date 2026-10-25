@@ -98,4 +98,3 @@ def test_serverless_tab_run_enabled_after_connection_failure(gui):
     gui.inputs["archive-folder"]["write-to"].setText("/dst")
     gui.update_status()
     assert gui.btn_run.isEnabled() is True
-    assert gui.btn_dry_run.isEnabled() is True

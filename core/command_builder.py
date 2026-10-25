@@ -352,6 +352,7 @@ def validate_state(
         else:
             _, path_warns = expand_source_paths(p)
             res.warnings.extend(path_warns)
+        _validate_album_choice(res, tab_state)
 
     elif tab_key == "upload-gp":
         p = tab_state.get("path", "").strip()
@@ -499,6 +500,7 @@ def validate_state_light(
     if tab_key == "upload-folder":
         if not tab_state.get("path", "").strip():
             _add_error(res, "Source folder path is required.", "path")
+        _validate_album_choice(res, tab_state)
 
     elif tab_key == "upload-gp":
         if not tab_state.get("path", "").strip():
@@ -771,3 +773,13 @@ def build_plan_from_state(
     plan.argv = cmd_parts + emitter.opts + path_opt
     plan.display_argv = mask_command_for_display([binary_path] + plan.argv)
     return plan
+
+
+def _validate_album_choice(res, tab_state: dict) -> None:
+    from .album_choice import ALBUM_MODES
+
+    mode = ALBUM_MODES.get(tab_state.get("album-mode", ""), "none")
+    if mode == "existing" and not tab_state.get("album-existing", "").strip():
+        _add_error(res, "Pick an existing album.", "album-existing")
+    elif mode == "new" and not tab_state.get("album-new", "").strip():
+        _add_error(res, "Enter a name for the new album.", "album-new")
