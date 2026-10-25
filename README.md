@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/salcedosync.png" alt="SalcedoSync icon" width="128"></p>
+
 # SalcedoSync
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

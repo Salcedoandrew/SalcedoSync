@@ -1,33 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <mask id="knock">
-    <rect width="512" height="512" fill="#fff"/>
-    <!-- transparent ring separating disc from petals -->
-    <circle cx="256" cy="256" r="141" fill="none" stroke="#000" stroke-width="10"/>
-    <g transform="translate(25.6 25.6) scale(0.9)">
-      <!-- back folder: hole -->
-      <path d="M150 220 q0 -12 12 -12 h36 q8 0 13 7 l8 11 h44 q12 0 12 12 v70 q0 12 -12 12 h-101 q-12 0 -12 -12 z" fill="#000"/>
-      <!-- ink gap ring around front folder, then its hole -->
-      <rect x="158" y="228" width="126" height="92" rx="12" fill="#fff" stroke="#fff" stroke-width="8"/>
-      <rect x="158" y="228" width="126" height="92" rx="12" fill="#000"/>
-      <!-- arrow: hole -->
-      <path d="M214 198 A 62 62 0 0 1 320 194" fill="none" stroke="#000" stroke-width="20" stroke-linecap="round"/>
-      <polygon points="297,194 351,194 324,236" fill="#000"/>
-      <!-- photo: gap ring, ink frame, sky hole, ink sun + mountains -->
-      <rect x="226" y="244" width="142" height="106" rx="18" fill="#000"/>
-      <rect x="231" y="249" width="132" height="96" rx="13" fill="#fff"/>
-      <rect x="240" y="258" width="114" height="78" rx="8" fill="#000"/>
-      <circle cx="321" cy="280" r="12" fill="#fff"/>
-      <path d="M238 338 L279 288 L300 314 L321 286 L356 338 H238 Z" fill="#fff"/>
-    </g>
-  </mask>
-
-  <!-- single ink layer: petals + disc, details knocked out -->
-  <g mask="url(#knock)" fill="currentColor">
-    <circle cx="256" cy="96"  r="90"/>
-    <circle cx="408" cy="207" r="90"/>
-    <circle cx="350" cy="385" r="90"/>
-    <circle cx="162" cy="385" r="90"/>
-    <circle cx="104" cy="207" r="90"/>
-    <circle cx="256" cy="256" r="141"/>
-  </g>
+  <!-- SalcedoSync menu-bar glyph: ring with an upload arrow (colored at runtime) -->
+  <circle cx="256" cy="256" r="196" fill="none" stroke="currentColor" stroke-width="44"/>
+  <path d="M256 118 L370 252 H300 V394 H212 V252 H142 Z" fill="currentColor"/>
 </svg>

@@ -51,6 +51,8 @@ Andrew's modified build. The Configuration tab is unchanged.
 - **Renamed to SalcedoSync.** The app is now SalcedoSync.app, with the new name
   in the window title, menu bar icon and About box. Your saved server, API key
   (Keychain), profiles and settings are kept as they are.
+- **New SalcedoSync icon** for the app, Dock, window and installers, with a
+  matching simple menu-bar icon (a ring with an upload arrow).
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 
