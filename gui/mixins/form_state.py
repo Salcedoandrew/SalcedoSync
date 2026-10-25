@@ -235,6 +235,7 @@ class FormStateMixin:
                 "album-mode": get_combo("album-mode"),
                 "album-existing": get_combo("album-existing"),
                 "album-new": get_text("album-new"),
+                "compress": get_bool("compress"),
             }
             state.update(
                 album_flags_state(

@@ -45,3 +45,14 @@ def test_progress_parsing():
         3,
     )
     assert s.report == {"Total Assets": 3, "Errors": 0}
+
+
+def test_compression_helpers(tmp_path):
+    from core.compression import ban_file_args, is_paired_raw
+
+    (tmp_path / "a.RAF").write_bytes(b"x")
+    (tmp_path / "a.JPG").write_bytes(b"x")
+    (tmp_path / "b.raf").write_bytes(b"x")
+    assert is_paired_raw(tmp_path / "a.RAF")
+    assert not is_paired_raw(tmp_path / "b.raf")
+    assert ban_file_args(["d [1]/a*.RAF"]) == ["--ban-file", "/d \\[1\\]/a\\*.RAF"]

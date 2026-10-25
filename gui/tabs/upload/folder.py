@@ -1,5 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QCompleter,
     QHBoxLayout,
@@ -108,6 +109,15 @@ def build_upload_folder_tab(host) -> QWidget:
     t_new.textChanged.connect(lambda _t: host._schedule_status_update())
     host._on_album_mode_changed = on_mode_changed
     on_mode_changed(c_mode.currentText())
+
+    cb_compress = QCheckBox("Compress images (same as Immich Upload)")
+    cb_compress.setToolTip(
+        "JPEG/PNG/WebP/GIF are compressed with caesiumclt at quality 80, keeping "
+        "EXIF/GPS and file dates, into a temp copy. Originals are never changed. "
+        "Videos and RAW files upload as they are."
+    )
+    host.inputs["upload-folder"]["compress"] = cb_compress
+    form.add_row("Compression", cb_compress)
 
     card.layout.addLayout(form)
     lay.addWidget(card)

@@ -44,3 +44,6 @@ immichgo_website_bundle.txt
 # MkDocs build output & Cache
 site/
 .cache/
+
+# caesiumclt binary fetched by scripts/fetch_caesiumclt.sh
+/caesiumclt

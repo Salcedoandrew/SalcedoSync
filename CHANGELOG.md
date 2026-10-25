@@ -27,6 +27,14 @@ Andrew's modified build. The Configuration tab is unchanged.
   over https first, which answers fast, then falls back to http. It waits
   longer and retries once, loads in the background so the window never
   freezes, and explains problems in plain English instead of a Python error.
+- **Optional image compression (same as Immich Upload).** A "Compress images"
+  tick box on Upload > From Folder (off by default, remembered). When ticked,
+  JPEG/PNG/WebP/GIF photos are compressed with caesiumclt 1.5.0 at quality 80,
+  keeping EXIF/GPS and file dates, into a temp copy before uploading; a photo is
+  only replaced if the compressed copy is smaller. Videos and other files upload
+  as they are, RAW files with a same-name JPG are skipped, folder names stay the
+  same, the originals are never changed, and the temp copy is deleted afterwards.
+  The progress panel shows a compression stage, and Cancel works during it.
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 
