@@ -5,7 +5,7 @@
 # the Keychain API key keep working.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${VERSION:-1.5.0-mod}"
+VERSION="${VERSION:-1.5.1-mod}"
 [ -x build/caesiumclt ] || scripts/fetch_caesiumclt.sh build/caesiumclt
 uv run python -m nuitka --output-dir=build --output-filename=SalcedoSync \
   --macos-app-name="SalcedoSync" \

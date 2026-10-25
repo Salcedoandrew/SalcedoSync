@@ -5,6 +5,18 @@ All notable changes to the Immich-Go GUI project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.1-mod (2026-10-25)
+
+Freebuff pre-release audit fixes #1-4, plus the release-workflow DMG fix.
+
+- **Compression: symlinks inside the folder are now included** under their link name instead of being silently dropped; symlinks escaping the folder are still skipped with a warning.
+- **Compression temp folder is now private (0700)** so other users on the machine cannot read the temp copies.
+- **CI: all GitHub Actions pinned to commit SHAs** (Dependabot keeps the pins up to date).
+- **Compression progress counts output files** as they appear, so the progress panel tracks the real output.
+- **macOS release DMG now attaches to the release** (the release workflow was looking for the old Immich-Go-GUI file name).
+- **Docs version synced to 1.5.1** (they still said 1.4.4).
+- Dependency updates: codeql-action 4.38.2 → 4.39.1, setup-uv 10.2.0 → 10.3.2.
+
 ## 1.5.0-mod (2026-10-24)
 
 First SalcedoSync release. Apple Silicon (arm64) only.
