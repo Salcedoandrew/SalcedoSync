@@ -13,6 +13,12 @@ pytestmark = pytest.mark.unit
 
 
 def _fake_caesium(tmp_path: Path) -> str:
+    # A POSIX shell script is not executable on Windows (WinError 193);
+    # use a batch file there so compress_folder can run it.
+    if os.name == "nt":
+        p = tmp_path / "caesiumclt.bat"
+        p.write_text("@echo off\r\nexit /b 0\r\n", encoding="utf-8")
+        return str(p)
     p = tmp_path / "caesiumclt"
     p.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     p.chmod(0o755)
@@ -131,6 +137,9 @@ def test_compress_folder_warns_escaping_symlink(tmp_path):
         cleanup(res)
 
 
+# POSIX permission bits do not apply on Windows (chmod only toggles
+# read-only there), so the 0700 check is meaningful on POSIX only.
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits do not apply on Windows")
 def test_temp_root_is_private(tmp_path):
     src = _src(tmp_path, "a.jpg")
     res = compress_folder(
