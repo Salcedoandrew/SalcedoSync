@@ -107,6 +107,9 @@ fix: auto-disable pause-immich-jobs without admin key
 docs: document admin API key and job pausing
 ```
 
+Sign your commits when you can (`git commit -S` with a configured signing
+key), so the history stays verifiable.
+
 ## Branching policy
 
 | Branch | Role |

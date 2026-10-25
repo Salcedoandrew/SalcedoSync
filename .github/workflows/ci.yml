@@ -3,7 +3,9 @@ name: CI Checks
 # Runs quality gates, multi-OS PySide6 tests, and self-test on master.
 on:
   push:
-    branches: [ "master" ]
+    # salcedo-mod is this edition's default branch; master is kept for
+    # parity with the upstream project.
+    branches: [ "master", "salcedo-mod" ]
   workflow_dispatch:
 
 jobs:

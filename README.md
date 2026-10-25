@@ -46,6 +46,12 @@ design and its documentation goes to that project.
 
 See [CHANGELOG.md](CHANGELOG.md) for details.
 
+## See it in action
+
+![Demo of the original Immich-Go GUI this edition is based on](docs/assets/immich-demo.gif)
+
+The upload flow is the same as the original app, plus the album choices above.
+
 ## Install (macOS, Apple silicon)
 
 1. Download the DMG from
@@ -67,6 +73,24 @@ uv sync --dev
 uv run python app.py
 uv run pytest
 ```
+
+## Troubleshooting
+
+**macOS asks for your password when the app reads the saved API key.**
+The key lives in macOS Keychain, and macOS asks you to authorize each app
+that reads it. Click **Always Allow** on the prompt. If it keeps asking,
+open Keychain Access, find `immich-go-gui`, Get Info → Access Control →
+**Allow all applications to access this item**. Or, in the app, switch
+Secret Storage on the Config tab from OS Keyring to Local secrets file —
+the key is then stored in `secrets.toml` instead of Keychain.
+
+**"Couldn't load your albums."** The app could not reach your Immich
+server, or the server was too slow to answer. Check the server URL in
+Configuration, make sure the server is up, and try **Refresh**. A 401/403
+means Immich rejected the API key — check it on the Config tab.
+
+Full troubleshooting and FAQ: [shitan198u.github.io/immich-go-gui](https://shitan198u.github.io/immich-go-gui/)
+(user guide → Troubleshooting / FAQ).
 
 ## Documentation
 

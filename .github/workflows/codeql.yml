@@ -2,7 +2,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "master" ]
+    # salcedo-mod is this edition's default branch; master is kept for
+    # parity with the upstream project.
+    branches: [ "master", "salcedo-mod" ]
   # NOTE: No `branches:` filter on pull_request — CI runs on all pull requests.
   pull_request:
   schedule:
