@@ -3,7 +3,9 @@
 Pure Python module, Qt-free.
 """
 
+import ipaddress
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 import requests
 
@@ -16,13 +18,34 @@ class ConnectionTestResult:
     server_version: str | None = None
 
 
+def is_local_host(host: str) -> bool:
+    """True for localhost, .local, single-label LAN names and IP addresses."""
+    host = (host or "").strip("[]").lower()
+    if (
+        host == "localhost"
+        or host.endswith((".local", ".localhost"))
+        or "." not in host
+    ):
+        return True
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return False
+
+
 def normalize_server_url(url: str) -> str:
-    """Ensure server URL has scheme and no trailing slash."""
+    """Ensure server URL has scheme and no trailing slash.
+
+    A bare public hostname defaults to https; LAN hosts and IPs default to
+    http. An explicit http:// or https:// is kept as typed.
+    """
     url = url.strip()
     if not url:
         return ""
     if not (url.startswith(("http://", "https://"))):
-        url = "http://" + url
+        host = urlsplit("//" + url).hostname or ""
+        url = ("http://" if is_local_host(host) else "https://") + url
     return url.rstrip("/")
 
 
@@ -55,8 +78,19 @@ def test_immich_connection(
             headers=headers,
             verify=not skip_ssl,
             timeout=timeout,
+            allow_redirects=False,  # never forward the API key to another URL
         )
         status_code = response.status_code
+        if 300 <= status_code < 400:
+            return ConnectionTestResult(
+                ok=False,
+                message=(
+                    f"The server redirected to another address (HTTP {status_code}). "
+                    "For safety the API key isn't sent there. Enter the server's "
+                    "final address (often https://) in Server URL."
+                ),
+                status_code=status_code,
+            )
 
         if status_code == 200:
             version = None
