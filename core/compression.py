@@ -85,6 +85,9 @@ class CompressResult:
     n_comp: int = 0
     n_pass: int = 0
     n_fail: int = 0
+    skipped_symlinks: list[str] = field(
+        default_factory=list
+    )  # rel paths of symlinks escaping src
     bytes_in: int = 0
     bytes_out: int = 0
     message: str = ""
@@ -133,8 +136,112 @@ def ban_file_args(paired_rel: list[str]) -> list[str]:
     return out
 
 
-def _files(src: Path) -> list[Path]:
-    return sorted(p for p in src.rglob("*") if p.is_file() and not p.is_symlink())
+def _is_within(base: Path, candidate: Path) -> bool:
+    """True if candidate's resolved path is inside base's resolved path.
+
+    Same rule as folder_filters.is_within_folder, kept local so this
+    module stays stdlib-only: a symlink target is allowed only when it
+    resolves inside the source folder.
+    """
+    try:
+        candidate.resolve().relative_to(base.resolve())
+    except (ValueError, OSError, RuntimeError):
+        return False
+    return True
+
+
+def _files(src: Path) -> tuple[list[Path], list[str]]:
+    """Files under src, following symlinks only while they stay inside src.
+
+    Returns (files, skipped). A symlinked file keeps the link's name; a
+    symlinked dir is walked under the link's name unless its target was
+    already reached under another name. Symlinks whose resolved target
+    escapes src are listed in skipped (rel paths). Dangling links are
+    skipped. Entries are visited in sorted order, so which name wins for
+    a directory reached twice is deterministic.
+    """
+    src = src.resolve()
+    files: list[Path] = []
+    skipped: list[str] = []
+    seen: set[Path] = set()
+    stack: list[tuple[Path, Path]] = [(src, src)]
+    while stack:
+        disp, real = stack.pop()
+        try:
+            resolved = real.resolve()
+        except (OSError, RuntimeError):
+            continue
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        try:
+            with os.scandir(real) as it:
+                entries = sorted(it, key=lambda e: e.name)
+        except OSError:
+            continue
+        for e in entries:
+            p_disp = disp / e.name
+            try:
+                if e.is_symlink():
+                    target = Path(e.path).resolve()
+                    if not _is_within(src, target):
+                        skipped.append(str(p_disp.relative_to(src)))
+                    elif e.is_dir(follow_symlinks=True):
+                        stack.append((p_disp, target))
+                    elif e.is_file(follow_symlinks=True):
+                        files.append(p_disp)
+                elif e.is_dir(follow_symlinks=False):
+                    stack.append((p_disp, Path(e.path)))
+                elif e.is_file(follow_symlinks=False):
+                    files.append(p_disp)
+            except OSError:
+                continue
+    return sorted(files), sorted(skipped)
+
+
+class _OutputCounter:
+    """Counts files under a growing output dir without re-walking it.
+
+    Remembers each directory's mtime, direct file count and subdir list.
+    A directory's own mtime only changes when its direct entries change,
+    so an unchanged directory is never re-listed: each tick stats every
+    directory (there are few) and re-reads only the changed ones. New
+    files are never missed, because creating a file always bumps its
+    parent directory's mtime.
+    """
+
+    def __init__(self, root: Path):
+        self._root = root
+        # dir -> (mtime_ns, direct file count, subdirs, total below dir)
+        self._cache: dict[Path, tuple[int, int, tuple[Path, ...], int]] = {}
+
+    def count(self) -> int:
+        return self._count_dir(self._root)
+
+    def _count_dir(self, d: Path) -> int:
+        try:
+            mtime = d.stat().st_mtime_ns
+        except OSError:
+            return 0
+        cached = self._cache.get(d)
+        if cached is not None and cached[0] == mtime:
+            _, n_files, subdirs, _ = cached
+        else:
+            n_files = 0
+            subdirs: list[Path] = []
+            try:
+                with os.scandir(d) as it:
+                    for e in it:
+                        if e.is_dir(follow_symlinks=False):
+                            subdirs.append(Path(e.path))
+                        elif e.is_file(follow_symlinks=False):
+                            n_files += 1
+            except OSError:
+                return cached[3] if cached is not None else 0
+            subdirs = sorted(subdirs)
+        total = n_files + sum(self._count_dir(s) for s in subdirs)
+        self._cache[d] = (mtime, n_files, tuple(subdirs), total)
+        return total
 
 
 def _copy_dates(orig: Path, dst: Path) -> None:
@@ -188,8 +295,9 @@ def compress_folder(
     """Compress photos from src into a temp mirror. Raises CompressionCanceled."""
     src = src.resolve()
     tmpbase = Path(tmpbase or os.environ.get("TMPDIR") or "/tmp").resolve()
-    files = _files(src)
+    files, skipped = _files(src)
     res = CompressResult()
+    res.skipped_symlinks = skipped
     res.paired_raw = [str(p.relative_to(src)) for p in files if is_paired_raw(p)]
     imgs = [p for p in files if _is_img(p)]
     res.n_img = len(imgs)
@@ -208,8 +316,9 @@ def compress_folder(
     try:
         work = root / src.name
         cdir = root / "caesium-out"
-        work.mkdir(parents=True)
-        cdir.mkdir()
+        work.mkdir(parents=True, mode=0o700)
+        os.chmod(root, 0o700)
+        cdir.mkdir(mode=0o700)
         res.temp_root, res.upload_dir = root, work
 
         # caesiumclt -S keeps structure relative to the photos' common parent folder
@@ -231,6 +340,7 @@ def compress_folder(
                 stdout=logf,
                 stderr=subprocess.STDOUT,
             )
+            counter = _OutputCounter(cdir)
             while proc.poll() is None:
                 if cancel.is_set():
                     proc.terminate()
@@ -239,7 +349,7 @@ def compress_folder(
                     except subprocess.TimeoutExpired:
                         proc.kill()
                     raise CompressionCanceled
-                n_out = sum(1 for p in cdir.rglob("*") if p.is_file())
+                n_out = counter.count()
                 progress("compress", min(n_out, res.n_img), res.n_img)
                 time.sleep(0.5)
         finally:
@@ -312,6 +422,13 @@ def compress_folder(
             f"Compressed {res.n_comp} photos: {res.bytes_in / mb:.1f} MB → {res.bytes_out / mb:.1f} MB "
             f"(saved {res.saved_pct}%)."
         )
+        if skipped:
+            shown = ", ".join(skipped[:3])
+            more = f" and {len(skipped) - 3} more" if len(skipped) > 3 else ""
+            res.message += (
+                f" Skipped {len(skipped)} symlinked file(s) pointing outside "
+                f"the folder: {shown}{more}."
+            )
         return res
     except BaseException:
         shutil.rmtree(root, ignore_errors=True)  # canceled/failed: no temp left
