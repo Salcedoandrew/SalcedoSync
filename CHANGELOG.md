@@ -22,6 +22,11 @@ Andrew's modified build. The Configuration tab is unchanged.
   Immich, then files processed), counts for discovered, uploaded, already in
   Immich, skipped and errors, a Cancel button, and a clear done or error message.
   Cancel stops immich-go the same way Ctrl+C does, so it finishes cleanly.
+- **Album list loads reliably.** For a plain http web address with no port
+  (for example a server behind Cloudflare), the app now asks for the album list
+  over https first, which answers fast, then falls back to http. It waits
+  longer and retries once, loads in the background so the window never
+  freezes, and explains problems in plain English instead of a Python error.
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 

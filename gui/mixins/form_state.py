@@ -1,6 +1,7 @@
-from PySide6.QtCore import Qt
+import threading
+
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QComboBox,
     QLineEdit,
@@ -9,8 +10,12 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
-from core.album_choice import album_flags_state, fetch_album_names
+from core.album_choice import AlbumFetchError, album_flags_state, fetch_album_names
 from core.network import normalize_server_url
+
+
+class _AlbumFetchSignal(QObject):
+    done = Signal(object, str)  # names or None, error message
 
 
 class FormStateMixin:
@@ -146,18 +151,34 @@ class FormStateMixin:
                 "Set the server URL and API key in the Configuration tab first.",
             )
             return
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        try:
-            names = fetch_album_names(server, cfg["api_key"], not cfg.get("skip-ssl"))
-        except Exception as e:
-            QApplication.restoreOverrideCursor()
-            QMessageBox.warning(
-                self,
-                "Albums",
-                f"Couldn't load your albums:\n{type(e).__name__}: {str(e)[:200]}",
-            )
+        if getattr(self, "_album_fetch_busy", False):
             return
-        QApplication.restoreOverrideCursor()
+        self._album_fetch_busy = True
+        combo.lineEdit().setPlaceholderText("Loading albums…")
+        # Fetch off the UI thread; the signal is delivered on the main thread.
+        if not hasattr(self, "_album_fetch_signal"):
+            self._album_fetch_signal = _AlbumFetchSignal()
+            self._album_fetch_signal.done.connect(self._on_albums_loaded)
+        sig, key = self._album_fetch_signal, cfg["api_key"]
+        verify = not cfg.get("skip-ssl")
+
+        def work():
+            try:
+                sig.done.emit(fetch_album_names(server, key, verify), "")
+            except AlbumFetchError as e:
+                sig.done.emit(None, str(e))
+            except Exception:
+                sig.done.emit(None, "Couldn't load your albums. Try Refresh.")
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_albums_loaded(self, names, error: str):
+        self._album_fetch_busy = False
+        combo = self.album_existing_combo
+        combo.lineEdit().setPlaceholderText("Type to search your albums")
+        if error:
+            QMessageBox.warning(self, "Albums", error)
+            return
         current = combo.currentText()
         combo.blockSignals(True)
         combo.clear()
