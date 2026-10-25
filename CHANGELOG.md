@@ -35,6 +35,16 @@ Andrew's modified build. The Configuration tab is unchanged.
   as they are, RAW files with a same-name JPG are skipped, folder names stay the
   same, the originals are never changed, and the temp copy is deleted afterwards.
   The progress panel shows a compression stage, and Cancel works during it.
+- **Safer, smoother server connection.** Your API key is never sent on to
+  another address if the server redirects; you get a plain-English message
+  instead. The album list never drops from https to unencrypted http after a
+  certificate problem, and only tries http when https can't connect at all and
+  you typed http yourself. A bare web address such as photos.example.com now
+  means https (local names and IP addresses still use http). Connection tests
+  and the check before a run no longer freeze the window while they wait. A
+  bad number in a settings file or an advanced option now shows a clear error
+  or falls back to the default, and an invalid profile name in profiles.toml
+  is ignored instead of being used as a folder path.
 
 ## [1.4.4](https://github.com/shitan198u/immich-go-gui/compare/v1.4.3...v1.4.4) (2026-08-26)
 
