@@ -67,15 +67,31 @@ _BREAKING_RE = re.compile(
 )
 
 
+_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.]+)?$")
+
+
 def clean_version(version: str) -> str:
-    """Normalize version string by removing leading 'v', build info, and whitespace."""
+    """Normalize version string by removing leading 'v', build info, and whitespace.
+
+    Returns "" for anything that is not a plain dotted version (optionally
+    with a -prerelease suffix), so a hostile version string can never
+    become a directory name (e.g. "../../x" escaping the binary dir).
+    Callers already treat "" as invalid.
+    """
     version = version.strip()
     if not version:
         return ""
     if version.startswith(("v", "V")):
-        version = version[1:]
+        version = version[1:].strip()
+    if not version:
+        return ""
     # Handle version string like "0.32.0, built with..."
-    version = version.split(",")[0].strip().split()[0].strip()
+    first = version.split(",")[0].strip()
+    if not first:
+        return ""
+    version = first.split()[0].strip()
+    if not _VERSION_RE.match(version):
+        return ""
     return version
 
 

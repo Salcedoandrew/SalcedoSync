@@ -10,7 +10,6 @@ Authoritative context for AI agents working in this repository. When user-provid
 - **Frequent logical commits**: Small, reviewable commits with Conventional Commit prefixes (`fix:`, `feat:`, `chore:`, `test:`, `docs:`, `ci:`).
 - **Pre-Commit Verification**: The `.githooks/pre-commit` hook runs `pre-commit` (staged files only) automatically on every commit. Before **opening PRs**, run the full local pre-PR gate: `uv run pre-commit run --all-files`, `uv run ty check core/`, `uv run python app.py --self-test`, `uv run python scripts/sync_version.py --check`. Note that `pr-fast-feedback.yml` additionally runs multi-OS pytest, test-count synchronization, and security checks (pip-audit, CodeQL).
 - **Mandatory Pre-Commit Verification**: Run local checks (`uv run pre-commit run --all-files`, `uv run ty check core/`, `uv run python app.py --self-test`, `uv run python scripts/sync_version.py --check`) **before committing or opening PRs**. This guarantees `pr-fast-feedback.yml` passes on first attempt.
-- **Pre-Commit Verification**: The `.githooks/pre-commit` hook runs `pre-commit` (staged files only) automatically on every commit. Before **opening PRs**, run the full gate: `uv run pre-commit run --all-files`, `uv run ty check core/`, `uv run python app.py --self-test`, `uv run python scripts/sync_version.py --check`. This guarantees `pr-fast-feedback.yml` passes on first attempt.
 - **Minimal scope**: Match existing patterns. Avoid drive-by refactors — especially splitting `app.py` unless explicitly requested.
 
 ---
@@ -53,7 +52,7 @@ app.py (Qt UI)  →  core/* (Qt-free business logic)  →  immich-go (external b
 
 | Module | Role |
 |--------|------|
-| `app.py` (~4100 lines) | Qt UI: tabs, widgets, status, run/save/load, menus, diagnostics |
+| `app.py` (~150 lines) | Qt UI: tabs, widgets, status, run/save/load, menus, diagnostics |
 | `theme.py` | Palettes, QSS, DPR-aware SVG icons (`load_themed_icon`) |
 | `core/flags.toml` (~2600 lines) | All tabs + flags (simple/advanced, secrets, defaults) |
 | `core/flag_registry.py` | Parses flags.toml → `REGISTRY` singleton |
@@ -115,7 +114,7 @@ Nuitka directives live at the top of `app.py`. All release workflow invocations 
 
 ## 6. Testing
 
-- **Suite Metrics**: **488 tests across 30 modules**, coverage gate **75%** on `core` (Linux CI).
+- **Suite Metrics**: **520 tests across 33 modules**, coverage gate **75%** on `core` (Linux CI).
 - **Conventions**:
   - Windows path normalization: pass argv through `_norm_argv(...)` before comparing paths.
   - Golden fixtures: `tests/fixtures/command_states/*.json`

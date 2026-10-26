@@ -139,7 +139,9 @@ def test_compress_folder_warns_escaping_symlink(tmp_path):
 
 # POSIX permission bits do not apply on Windows (chmod only toggles
 # read-only there), so the 0700 check is meaningful on POSIX only.
-@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits do not apply on Windows")
+@pytest.mark.skipif(
+    os.name == "nt", reason="POSIX permission bits do not apply on Windows"
+)
 def test_temp_root_is_private(tmp_path):
     src = _src(tmp_path, "a.jpg")
     res = compress_folder(
@@ -176,3 +178,49 @@ def test_output_counter_incremental(tmp_path):
     # Unchanged tree: repeated counts stay correct.
     assert counter.count() == 5
     assert counter.count() == full_count()
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="shutil.which needs an extension on Windows"
+)
+def test_find_caesiumclt_prefers_path_over_cwd_in_source_run(tmp_path, monkeypatch):
+    """A caesiumclt next to argv[0] must not win over PATH in a source run."""
+    import sys
+
+    from core.compression import find_caesiumclt
+
+    cwd_bin = tmp_path / "cwd" / "caesiumclt"
+    cwd_bin.parent.mkdir()
+    cwd_bin.write_text("cwd", encoding="utf-8")
+    cwd_bin.chmod(0o755)
+    path_bin = tmp_path / "bin" / "caesiumclt"
+    path_bin.parent.mkdir()
+    path_bin.write_text("path", encoding="utf-8")
+    path_bin.chmod(0o755)
+    monkeypatch.setattr(sys, "argv", [str(tmp_path / "cwd" / "app.py")])
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    monkeypatch.setenv("PATH", str(path_bin.parent))
+    assert find_caesiumclt() == str(path_bin)
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="shutil.which needs an extension on Windows"
+)
+def test_find_caesiumclt_prefers_bundled_in_frozen_build(tmp_path, monkeypatch):
+    """In a frozen build the caesiumclt bundled next to the app still wins."""
+    import sys
+
+    from core.compression import find_caesiumclt
+
+    bundled = tmp_path / "app" / "caesiumclt"
+    bundled.parent.mkdir()
+    bundled.write_text("bundled", encoding="utf-8")
+    bundled.chmod(0o755)
+    path_bin = tmp_path / "bin" / "caesiumclt"
+    path_bin.parent.mkdir()
+    path_bin.write_text("path", encoding="utf-8")
+    path_bin.chmod(0o755)
+    monkeypatch.setattr(sys, "argv", [str(tmp_path / "app" / "SalcedoSync")])
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setenv("PATH", str(path_bin.parent))
+    assert find_caesiumclt() == str(bundled)

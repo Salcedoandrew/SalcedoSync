@@ -156,8 +156,6 @@ Official multi-format packages are produced by `.github/workflows/release.yml`. 
 When you change user-visible behavior, update the matching page under `docs/`. Use **MkDocs-relative** links in docs-tracked markdown (no `docs/` prefix), matching other pages under `docs/`.
 
 | Change type | Update |
-
-| Change type | Update |
 |-------------|--------|
 | New tab / flag | User workflow page + CLI mapping + advanced flags + tests |
 | Config field | `configuration.md` + `config-schema.md` |

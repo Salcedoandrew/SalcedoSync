@@ -102,12 +102,21 @@ class CompressResult:
 
 
 def find_caesiumclt() -> str | None:
-    """Bundled next to the app executable first (like Immich Upload), then PATH."""
-    here = [Path(sys.argv[0]).resolve().parent, Path(__file__).resolve().parent.parent]
-    for d in here:
-        p = d / "caesiumclt"
-        if p.is_file() and os.access(p, os.X_OK):
-            return str(p)
+    """Bundled next to the app executable first (frozen builds), then PATH.
+
+    The next-to-the-executable lookup is frozen-only: for a source run
+    sys.argv[0] is the current working directory, so a stray executable
+    named caesiumclt sitting in that folder would otherwise win over PATH.
+    """
+    if getattr(sys, "frozen", False):
+        here = [
+            Path(sys.argv[0]).resolve().parent,
+            Path(__file__).resolve().parent.parent,
+        ]
+        for d in here:
+            p = d / "caesiumclt"
+            if p.is_file() and os.access(p, os.X_OK):
+                return str(p)
     return shutil.which("caesiumclt") or (
         "/opt/homebrew/bin/caesiumclt"
         if os.access("/opt/homebrew/bin/caesiumclt", os.X_OK)
