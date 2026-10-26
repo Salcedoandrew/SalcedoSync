@@ -5,6 +5,16 @@ All notable changes to the Immich-Go GUI project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.2-mod (2026-10-25)
+
+Freebuff pre-release audit fixes #5-9 — the whole audit is now fixed.
+
+- **API key file is created locked-down from the start** (0600 at creation, not chmodded after writing), so a crash can never leave it world-readable.
+- **Compression tool lookup only trusts the folder next to the app in the packaged build**; source runs use PATH first, so a stray `caesiumclt` in the working directory is no longer executed.
+- **A bad version string can no longer escape the binary folder** — versions are validated where they become a directory name.
+- **Docs synced up** (line counts, test count, supported version).
+- **One redundant import removed.**
+
 ## 1.5.1-mod (2026-10-25)
 
 Freebuff pre-release audit fixes #1-4, plus the release-workflow DMG fix.
