@@ -191,7 +191,21 @@ def _atomic_write_text(path: Path, text: str, mode: int | None = None) -> None:
     """Atomically writes text to path and optionally sets POSIX permissions."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
+    if mode is not None and os.name == "posix":
+        # Create the temp file with the final mode from the start: the old
+        # write-then-chmod left a window where a crash could leave
+        # secrets.toml.tmp world-readable with the plaintext API key.
+        # Unlink a stale temp file first so O_EXCL guarantees the mode is
+        # ours, not inherited from an old file.
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+        fd = os.open(tmp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, mode)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+    else:
+        tmp.write_text(text, encoding="utf-8")
 
     if mode is not None and os.name == "posix":
         try:

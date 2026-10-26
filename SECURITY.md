@@ -3,7 +3,7 @@
 ## Supported versions
 
 Only the latest release of this edition is supported with security fixes
-(currently `v1.4.4-mod`). Older releases, and the upstream
+(currently `v1.5.1-mod`). Older releases, and the upstream
 [shitan198u/immich-go-gui](https://github.com/shitan198u/immich-go-gui)
 project, are covered by their own maintainers, not by this edition.
 

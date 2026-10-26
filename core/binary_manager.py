@@ -68,15 +68,34 @@ _BREAKING_RE = re.compile(
 
 
 def clean_version(version: str) -> str:
-    """Normalize version string by removing leading 'v', build info, and whitespace."""
+    """Normalize version string by removing leading 'v', build info, and whitespace.
+
+    This is only normalization, not validation: the app's own version can
+    be a plain word like "dev", which the update check relies on passing
+    through. The directory-name safety check lives at the one place a
+    version becomes a path (download_and_install), see
+    _is_safe_version_dir_name.
+    """
     version = version.strip()
     if not version:
         return ""
     if version.startswith(("v", "V")):
-        version = version[1:]
+        version = version[1:].strip()
+    if not version:
+        return ""
     # Handle version string like "0.32.0, built with..."
-    version = version.split(",")[0].strip().split()[0].strip()
-    return version
+    first = version.split(",")[0].strip()
+    if not first:
+        return ""
+    return first.split()[0].strip()
+
+
+_SAFE_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.]+)?$")
+
+
+def _is_safe_version_dir_name(version: str) -> bool:
+    """True when a cleaned version string is safe to use as a directory name."""
+    return bool(_SAFE_VERSION_RE.match(version))
 
 
 def parse_version_output(text: str) -> str:
@@ -612,6 +631,8 @@ class BinaryManager:
         """
         clean_v = clean_version(version)
         if not clean_v:
+            return False, "Invalid version tag"
+        if not _is_safe_version_dir_name(clean_v):
             return False, "Invalid version tag"
 
         version_dir = os.path.join(self.base_dir, clean_v)

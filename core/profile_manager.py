@@ -119,9 +119,7 @@ def _load_profiles_index() -> dict:
         content = idx_path.read_text(encoding="utf-8")
         _profiles_cache = tomllib.loads(content)
     except Exception as exc:
-        import logging
-
-        logging.getLogger(__name__).warning(
+        _log.warning(
             "Failed to parse profiles index %s: %s",
             idx_path,
             exc,

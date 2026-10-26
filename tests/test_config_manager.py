@@ -1,6 +1,9 @@
 """Unit tests for configuration loading and quarantine behavior."""
 
+import os
 import tomllib
+
+import pytest
 
 from core.config_manager import get_config_load_warning, load_config, save_config
 from core.models import AppConfig
@@ -87,3 +90,38 @@ def test_keyring_isolation_in_pytest():
     assert SecretStore.get_secret("test_prof", "api_key") == "mock_key_value"
     SecretStore.clear_secret("test_prof", "api_key")
     assert SecretStore.get_secret("test_prof", "api_key") == ""
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="POSIX permission bits do not apply on Windows"
+)
+def test_atomic_write_creates_secret_file_private(tmp_path):
+    """_atomic_write_text with mode=0o600 never leaves a readable temp file."""
+    import stat
+
+    from core.config_manager import _atomic_write_text
+
+    target = tmp_path / "secrets.toml"
+    _atomic_write_text(target, '[server]\napi_key = "k"\n', mode=0o600)
+    assert target.read_text(encoding="utf-8") == '[server]\napi_key = "k"\n'
+    assert stat.S_IMODE(target.stat().st_mode) == 0o600
+    assert list(tmp_path.glob("secrets.toml.tmp")) == []
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="POSIX permission bits do not apply on Windows"
+)
+def test_atomic_write_replaces_stale_temp_file(tmp_path):
+    """A leftover .tmp from a crashed run does not break the next write."""
+    import stat
+
+    from core.config_manager import _atomic_write_text
+
+    target = tmp_path / "secrets.toml"
+    stale = tmp_path / "secrets.toml.tmp"
+    stale.write_text("stale", encoding="utf-8")
+    stale.chmod(0o644)
+    _atomic_write_text(target, "new", mode=0o600)
+    assert target.read_text(encoding="utf-8") == "new"
+    assert stat.S_IMODE(target.stat().st_mode) == 0o600
+    assert not stale.exists()
