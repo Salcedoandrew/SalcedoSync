@@ -302,6 +302,16 @@ jobs:
           # assets with HTTP 400, which failed the macOS job on v1.5.0-mod.
           if [ ! -s "$SUMS_FILE" ]; then rm -f "$SUMS_FILE"; fi
 
+      # Render the release body from CHANGELOG.md so a tagged release gets
+      # its notes automatically (install steps + the version's changelog
+      # section + Features/Credits) instead of an empty body. Tag-only:
+      # a test dispatch has no CHANGELOG section for its throwaway version,
+      # and the script fails loudly when the section is missing.
+      - name: Generate release notes from CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: uv run python scripts/release_notes.py "$VERSION" --output release-notes.md
+
       # Upload this platform's assets to the GitHub Release using GitHub CLI —
       # gh release upload directly uploads matching platform files with --clobber,
       # avoiding softprops API race condition HttpErrors on concurrent matrix jobs.
@@ -318,7 +328,7 @@ jobs:
           assets=(Immich-Go-GUI-$VERSION-*)
           for f in SalcedoSync-$VERSION-*; do [ -f "$f" ] && assets+=("$f"); done
           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber 2>/dev/null || \
-          (gh release create "$RELEASE_TAG" "${assets[@]}" --title "$RELEASE_TAG" 2>/dev/null || true; \
+          (gh release create "$RELEASE_TAG" "${assets[@]}" --title "$RELEASE_TAG" --notes-file release-notes.md 2>/dev/null || true; \
            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber)
 
       - name: Publish assets to Test Pre-Release

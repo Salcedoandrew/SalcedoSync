@@ -114,7 +114,7 @@ Nuitka directives live at the top of `app.py`. All release workflow invocations 
 
 ## 6. Testing
 
-- **Suite Metrics**: **520 tests across 33 modules**, coverage gate **75%** on `core` (Linux CI).
+- **Suite Metrics**: **547 tests across 35 modules**, coverage gate **75%** on `core` (Linux CI).
 - **Conventions**:
   - Windows path normalization: pass argv through `_norm_argv(...)` before comparing paths.
   - Golden fixtures: `tests/fixtures/command_states/*.json`
