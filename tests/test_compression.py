@@ -80,6 +80,40 @@ def test_files_recurses_symlinked_dir(tmp_path):
     assert skipped == []
 
 
+def test_files_real_dir_wins_over_later_sorting_symlink(tmp_path):
+    # Regression: _files() used a LIFO stack, so the last-sorted
+    # directory was visited first and a symlink sorting after its target
+    # stole the target's files (they landed under the alias name).
+    # Directories are visited in sorted order now, so the real dir wins.
+    src = _src(tmp_path, "a.jpg")
+    adir = src / "adir"
+    adir.mkdir()
+    (adir / "photo.jpg").write_bytes(b"x")
+    os.symlink("adir", src / "zalias")
+    files, skipped = _files(src)
+    assert [p.relative_to(src).as_posix() for p in files] == [
+        "a.jpg",
+        "adir/photo.jpg",
+    ]
+    assert skipped == []
+
+
+def test_files_real_dir_wins_over_earlier_sorting_symlink(tmp_path):
+    # The real dir wins even when the symlink sorts before it (the
+    # existing recurses test has linkdir < sub; this is its mirror).
+    src = _src(tmp_path, "a.jpg")
+    zdir = src / "zdir"
+    zdir.mkdir()
+    (zdir / "photo.jpg").write_bytes(b"x")
+    os.symlink("zdir", src / "aalias")
+    files, skipped = _files(src)
+    assert [p.relative_to(src).as_posix() for p in files] == [
+        "a.jpg",
+        "zdir/photo.jpg",
+    ]
+    assert skipped == []
+
+
 def test_files_symlink_cycle(tmp_path):
     src = _src(tmp_path, "a.jpg")
     os.symlink(".", src / "loop")
@@ -137,6 +171,29 @@ def test_compress_folder_warns_escaping_symlink(tmp_path):
         cleanup(res)
 
 
+def test_compress_folder_warns_escaping_symlink_on_early_return(tmp_path):
+    # The skipped-symlink warning used to be appended only on the normal
+    # return path, so a run that bailed early never mentioned it.
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.jpg").write_bytes(b"x")
+    src = _src(tmp_path, "notes.txt")
+    os.symlink(outside / "secret.jpg", src / "escape.jpg")
+    res = compress_folder(
+        src,
+        _fake_caesium(tmp_path),
+        lambda *a: None,
+        threading.Event(),
+        tmpbase=tmp_path,
+    )
+    try:
+        assert res.skipped_symlinks == ["escape.jpg"]
+        assert "No photos to compress" in res.message
+        assert "Skipped 1 symlinked file(s) pointing outside the folder" in res.message
+    finally:
+        cleanup(res)
+
+
 # POSIX permission bits do not apply on Windows (chmod only toggles
 # read-only there), so the 0700 check is meaningful on POSIX only.
 @pytest.mark.skipif(
@@ -154,6 +211,27 @@ def test_temp_root_is_private(tmp_path):
     try:
         assert stat.S_IMODE(res.temp_root.stat().st_mode) == 0o700
         assert stat.S_IMODE(res.upload_dir.stat().st_mode) == 0o700
+    finally:
+        cleanup(res)
+
+
+def test_temp_root_name_is_random(tmp_path):
+    # The temp root used to be a predictable timestamp+PID name; it is
+    # now made with mkdtemp, so the name is the prefix plus a random
+    # suffix and cannot be pre-planted.
+    from core.compression import TEMP_PREFIX
+
+    src = _src(tmp_path, "a.jpg")
+    res = compress_folder(
+        src,
+        _fake_caesium(tmp_path),
+        lambda *a: None,
+        threading.Event(),
+        tmpbase=tmp_path,
+    )
+    try:
+        assert res.temp_root.name.startswith(TEMP_PREFIX)
+        assert len(res.temp_root.name) == len(TEMP_PREFIX) + 8
     finally:
         cleanup(res)
 

@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -166,8 +167,9 @@ def _files(src: Path) -> tuple[list[Path], list[str]]:
     symlinked dir is walked under the link's name unless its target was
     already reached under another name. Symlinks whose resolved target
     escapes src are listed in skipped (rel paths). Dangling links are
-    skipped. Entries are visited in sorted order, so which name wins for
-    a directory reached twice is deterministic.
+    skipped. Real directories are visited before a symlink to the same
+    target, so the real name wins; among the rest the first-sorted name
+    wins, so which name wins is deterministic.
     """
     src = src.resolve()
     files: list[Path] = []
@@ -188,6 +190,8 @@ def _files(src: Path) -> tuple[list[Path], list[str]]:
                 entries = sorted(it, key=lambda e: e.name)
         except OSError:
             continue
+        real_dirs: list[tuple[Path, Path]] = []
+        link_dirs: list[tuple[Path, Path]] = []
         for e in entries:
             p_disp = disp / e.name
             try:
@@ -196,15 +200,21 @@ def _files(src: Path) -> tuple[list[Path], list[str]]:
                     if not _is_within(src, target):
                         skipped.append(str(p_disp.relative_to(src)))
                     elif e.is_dir(follow_symlinks=True):
-                        stack.append((p_disp, target))
+                        link_dirs.append((p_disp, target))
                     elif e.is_file(follow_symlinks=True):
                         files.append(p_disp)
                 elif e.is_dir(follow_symlinks=False):
-                    stack.append((p_disp, Path(e.path)))
+                    real_dirs.append((p_disp, Path(e.path)))
                 elif e.is_file(follow_symlinks=False):
                     files.append(p_disp)
             except OSError:
                 continue
+        # The stack is LIFO: push symlinked directories first, then real
+        # ones, each in reverse sorted order, so real directories are
+        # visited before a symlink to the same target (the real name wins)
+        # and the first-sorted name wins among the rest.
+        stack.extend(reversed(link_dirs))
+        stack.extend(reversed(real_dirs))
     return sorted(files), sorted(skipped)
 
 
@@ -297,23 +307,37 @@ def compress_folder(
     res.paired_raw = [str(p.relative_to(src)) for p in files if is_paired_raw(p)]
     imgs = [p for p in files if _is_img(p)]
     res.n_img = len(imgs)
+    # The warning is built once so it shows on every return path, not
+    # just the normal one: the early returns below used to drop it.
+    warn = ""
+    if skipped:
+        shown = ", ".join(skipped[:3])
+        more = f" and {len(skipped) - 3} more" if len(skipped) > 3 else ""
+        warn = (
+            f" Skipped {len(skipped)} symlinked file(s) pointing outside "
+            f"the folder: {shown}{more}."
+        )
     if not imgs:
-        res.message = "No photos to compress; uploading originals."
+        res.message = "No photos to compress; uploading originals." + warn
         return res
 
     if src.stat().st_dev != tmpbase.stat().st_dev:
         need_kb = sum(p.stat().st_size for p in imgs) // 1024
         free_kb = shutil.disk_usage(tmpbase).free // 1024
         if need_kb + 2097152 > free_kb:
-            res.message = "Not enough free space to compress; uploading originals."
+            res.message = (
+                "Not enough free space to compress; uploading originals." + warn
+            )
             return res
 
-    root = tmpbase / f"{TEMP_PREFIX}{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}"
+    # mkdtemp creates the folder atomically with a random name and mode
+    # 0700: no predictable name to pre-plant, and no chmod that could
+    # follow a planted symlink.
+    root = Path(tempfile.mkdtemp(prefix=TEMP_PREFIX, dir=tmpbase))
     try:
         work = root / src.name
         cdir = root / "caesium-out"
-        work.mkdir(parents=True, mode=0o700)
-        os.chmod(root, 0o700)
+        work.mkdir(mode=0o700)
         cdir.mkdir(mode=0o700)
         res.temp_root, res.upload_dir = root, work
 
@@ -418,13 +442,7 @@ def compress_folder(
             f"Compressed {res.n_comp} photos: {res.bytes_in / mb:.1f} MB → {res.bytes_out / mb:.1f} MB "
             f"(saved {res.saved_pct}%)."
         )
-        if skipped:
-            shown = ", ".join(skipped[:3])
-            more = f" and {len(skipped) - 3} more" if len(skipped) > 3 else ""
-            res.message += (
-                f" Skipped {len(skipped)} symlinked file(s) pointing outside "
-                f"the folder: {shown}{more}."
-            )
+        res.message += warn
         return res
     except BaseException:
         shutil.rmtree(root, ignore_errors=True)  # canceled/failed: no temp left
